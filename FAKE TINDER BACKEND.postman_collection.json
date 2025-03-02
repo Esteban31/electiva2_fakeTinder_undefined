@@ -1,0 +1,230 @@
+{
+	"info": {
+		"_postman_id": "16933120-2619-4367-993a-216b67ea83c9",
+		"name": "FAKE TINDER BACKEND",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "6814502"
+	},
+	"item": [
+		{
+			"name": "AUTH",
+			"item": [
+				{
+					"name": "GENERATE TOKEN",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"user\":\"admin\",\r\n    \"password\":\"T9bXgiY95j6F\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:3000/api/auth",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"auth"
+							],
+							"query": [
+								{
+									"key": "person",
+									"value": "Juan",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "REGISTER USER",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\":\"juan5@u.com\",\r\n    \"password\":\"123\",\r\n    \"firstName\":\"Juan\",\r\n    \"lastName\":\"Calle\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/api/users",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"users"
+					],
+					"query": [
+						{
+							"key": "person",
+							"value": "Juan",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "SWIPE",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"emailUser\": \"juan1@u.com\",\r\n    \"targetEmailUser\": \"juan2@u.com\",\r\n    \"action\": \"Like\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/api/swipe",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"swipe"
+					],
+					"query": [
+						{
+							"key": "person",
+							"value": "Juan",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET USERS",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "currentUser",
+						"value": "juan2@u.com",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\":\"juan@u.com\",\r\n    \"password\":\"123\",\r\n    \"firstName\":\"Juan\",\r\n    \"lastName\":\"Calle\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:3000/api/users",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"users"
+					],
+					"query": [
+						{
+							"key": "person",
+							"value": "Juan",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET MATCHS",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "currentUser",
+						"value": "juan2@u.com",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"url": {
+					"raw": "localhost:3000/api/matchs/juan1@u.com",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"matchs",
+						"juan1@u.com"
+					],
+					"query": [
+						{
+							"key": "person",
+							"value": "Juan",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NDA5NTI2OTUsImV4cCI6MTc0MDk1NjI5NX0.5sKRVxbyOVAWcPvRLRQp4vKOPFuyM7oGvPiD_F_ahag",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}

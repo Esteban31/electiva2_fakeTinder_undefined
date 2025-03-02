@@ -6,6 +6,9 @@ import {
   isValidPayload,
   checkHeaders,
 } from "../validators/index.validator.js";
+
+import {checkSwipePayload, checkMatchParams} from "../validators/swipe.validator.js"
+
 import { authenticateJWT } from "../middlewares/guard.js";
 
 // CONTROLLERS
@@ -14,6 +17,8 @@ import {
   createUser,
   getAvailableUsers,
 } from "../controllers/user.controller.js";
+
+import {swipeAction, getMatchedSwipes} from "../controllers/swipe.controller.js"
 
 const router = Router();
 
@@ -25,8 +30,9 @@ router.post("/users", authenticateJWT, checkUserFields, isValidPayload, createUs
 router.get("/users", authenticateJWT, checkHeaders, isValidPayload, getAvailableUsers);
 
 
-// SWIPES
-router.post("/swipe", authenticateJWT, checkUserFields, isValidPayload, createUser);
+// SWIPES AND MATCHS
+router.post("/swipe", authenticateJWT, checkSwipePayload, isValidPayload, swipeAction);
+router.get("/matchs/:email", authenticateJWT, checkMatchParams, isValidPayload, getMatchedSwipes);
 
 
 export default router;
