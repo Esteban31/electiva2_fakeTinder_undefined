@@ -11,7 +11,7 @@ export const swipeAction = (req, res) => {
 
 export const getMatchedSwipes = (req, res) => {
 
-    const getMatchSwipes = getMatchSwipesService(req.query.email)
+    const getMatchSwipes = getMatchSwipesService(req.params.email)
 
    return res.status(200).send(getMatchSwipes)
 }
