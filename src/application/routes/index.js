@@ -5,14 +5,14 @@ import {
   checkUserFields,
   isValidPayload,
   checkHeaders,
-} from "../validators/index.validator.js";
+} from "../middlewares/validators/index.validator.js";
 
-import {checkSwipePayload, checkMatchParams} from "../validators/swipe.validator.js"
+import {checkSwipePayload, checkMatchParams} from "../middlewares/validators/swipe.validator.js"
 
 import { authenticateJWT } from "../middlewares/guard.js";
 
 // CONTROLLERS
-import { generateToken } from "../controllers/auth.controller.js";
+import { generateToken, login } from "../controllers/auth.controller.js";
 import {
   createUser,
   getAvailableUsers,
@@ -22,8 +22,9 @@ import {swipeAction, getMatchedSwipes} from "../controllers/swipe.controller.js"
 
 const router = Router();
 
-// AUTH
+// AUTH AND SIGNUP
 router.post("/auth", generateToken);
+router.post("/auth/login", login);
 
 // USERS
 router.post("/users", authenticateJWT, checkUserFields, isValidPayload, createUser);

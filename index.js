@@ -1,8 +1,11 @@
 
 process.loadEnvFile()
 import express from "express";
+import { mongooseConnection } from "./src/infrastructure/databases/connection.js";
 
-import router from './routes/index.js';
+mongooseConnection()
+
+import router from './src/application/routes/index.js'
 // import cors from 'cors'
 
 

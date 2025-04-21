@@ -10,8 +10,8 @@ export const checkHeaders = [
 export const checkUserFields = [
     body('email').isEmail(),
     body('password').notEmpty(),
-    body('firstName').escape().notEmpty(),
-    body('lastName').escape().notEmpty()
+    body('birthDate').notEmpty(),
+    body('fullName').escape().notEmpty()
 ]
 
 export const isValidPayload = (req,res, next) => {

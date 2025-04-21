@@ -1,4 +1,4 @@
-import { swipes } from "../../swipesData.js";
+import { swipes } from "../../../../swipesData.js";
 
 export const swipeActionService = (data) => {
   const search = swipes.find(

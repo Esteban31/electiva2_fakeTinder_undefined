@@ -1,4 +1,4 @@
-import {swipeActionService, getMatchSwipesService} from "../services/swipes/index.js"
+import {swipeActionService, getMatchSwipesService} from "../../domain/services/swipes/index.js"
 
 export const swipeAction = (req, res) => {
     if (swipeActionService(req.body)) {
