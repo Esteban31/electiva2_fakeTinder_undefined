@@ -22,17 +22,40 @@ export const generateToken = (req, res) =>{
 }
 
 
+
+
+
 export const login = async(req, res) =>{
 
-
     try {
-        const data = await loginService(req.body)
+        const data = await loginService(req.body);
+    
+        // Verificamos si tiene _id y generamos token
+        if (data[0].email) {
 
-        return res.status(200).send(data);
-
+            const token = jwt.sign(
+                { email: data.email, id: data._id },
+                process.env.JWT_KEY,
+                { expiresIn: '1h' }
+            );
+    
+            // Creamos un nuevo objeto con el token agregado
+            const responseData = {
+                "id": data[0]._id,
+                "fullName": data[0].fullName,
+                "email": data[0].email,
+                "birthDate": data[0].birthDate,
+                access_token: token
+            };
+    
+            return res.status(200).send(responseData);
+        }
+    
+        return res.status(401).send({ message: "Credenciales inválidas" });
+    
     } catch (error) {
         return res.status(500).send({ message: error.message });
-    }
+    }    
 
 
 

@@ -16,6 +16,8 @@ import { generateToken, login } from "../controllers/auth.controller.js";
 import {
   createUser,
   getAvailableUsers,
+  getUserById,
+  updateUser
 } from "../controllers/user.controller.js";
 
 import {swipeAction, getMatchedSwipes} from "../controllers/swipe.controller.js"
@@ -27,8 +29,10 @@ router.post("/auth", generateToken);
 router.post("/auth/login", login);
 
 // USERS
-router.post("/users", authenticateJWT, checkUserFields, isValidPayload, createUser);
-router.get("/users", authenticateJWT, checkHeaders, isValidPayload, getAvailableUsers);
+router.post("/users", checkUserFields, isValidPayload, createUser); //CREATE USER
+router.get("/users", authenticateJWT, checkHeaders, isValidPayload, getAvailableUsers); //GET USERS
+router.get("/users/:id", authenticateJWT, getUserById); //GET USER BY ID
+router.put("/users", authenticateJWT, updateUser); //UPDATE USER
 
 
 // SWIPES AND MATCHS

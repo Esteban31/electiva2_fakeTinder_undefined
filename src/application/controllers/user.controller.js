@@ -1,4 +1,4 @@
-import { createUserService, getUsersService} from "../../domain/services/users/user.service.js"
+import { createUserService, getUserByIdService, updateUserService} from "../../domain/services/users/user.service.js"
 
 
 export const createUser = async (req, res) => {
@@ -16,9 +16,24 @@ export const createUser = async (req, res) => {
 };
 
 
+export const getUserById = async (req,res)=>{
+
+  const resp = await getUserByIdService(req.params.id);
+  return res.status(resp.code).send(resp.info);
+}
+
+
+export const updateUser = async(req,res)=>{
+
+  const resp = await updateUserService(req.body)
+  return res.status(resp.code).send(resp.info);
+ 
+}
+
+
 
 export const getAvailableUsers = (req, res) => {
-  const users = getUsersService(req.headers.currentuser)
+  // const users = getUsersService(req.headers.currentuser)
 
-  res.status(200).send(users)
+  // res.status(200).send(users)
 };

@@ -7,8 +7,12 @@ export const createUserService = async (user) => {
       password: user.password,
       fullName: user.fullName,
       birthDate: user.birthDate,
-      interesting: [],
-      likes: [],
+      isNewUser: true,
+      interesting: [{}],
+      profilePicture:"https://static.vecteezy.com/system/resources/previews/009/292/244/non_2x/default-avatar-icon-of-social-media-user-vector.jpg", //Default profile pic
+      description:"",
+      location:"",
+      likes: [{}],
     });
 
     await newUser.save();
@@ -16,7 +20,6 @@ export const createUserService = async (user) => {
 
   } catch (error) {
     if (error.code === 11000) {
-      // Error por email duplicado
       throw new Error("The email is already registered.");
     }else{
       throw new Error("Error creating the user.");
@@ -27,9 +30,30 @@ export const createUserService = async (user) => {
 
 
 
-export const getUsersService = (email) =>{
-  // const search = users.filter(user => user.email !== email);
-  // return search
+export const getUserByIdService = async (id) => {
+
+  try {
+    const search = await User.findById(id).exec();
+
+    return{
+      info:{
+        message:"",
+        data: search,
+      },
+      code: 200
+    }
+
+  } catch (error) {
+    return{
+      info:{
+        message:error.message,
+        data: [],
+      },
+      code: 500
+    }
+  }
+
+  
 }
 
 
@@ -48,4 +72,28 @@ export const loginService = async(user) =>{
 
   console.log(search)
 
+}
+
+
+export const updateUserService = async(user) =>{
+  try {
+    const search = await User.findOneAndUpdate({_id: user._id},user)
+
+    return{
+      info:{
+        message:"User updated successfully",
+        data: [],
+      },
+      code: 200
+    }
+
+  } catch (error) {
+    return{
+      info:{
+        message:error.message,
+        data: [],
+      },
+      code: 500
+    }
+  }
 }
