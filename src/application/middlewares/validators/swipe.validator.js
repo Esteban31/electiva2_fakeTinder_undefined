@@ -1,8 +1,8 @@
 import { body, param } from 'express-validator';
 
 export const checkSwipePayload = [
-    body('emailUser').isEmail(),
-    body('targetEmailUser').isEmail(),
+    body('userId').notEmpty(),
+    body('targetUserId').notEmpty(),
     body('action').notEmpty()
 ]
 

@@ -1,4 +1,6 @@
 import { User } from "../../../infrastructure/databases/connection.js";
+import { Swipe } from "../../../infrastructure/databases/connection.js";
+
 
 export const createUserService = async (user) => {
   try {
@@ -124,7 +126,12 @@ export const updateToopicsService = async (user) => {
 export const getFeedUserService = async (currentUser) => {
 
   try {
-    const search = await User.find({ _id: { $ne: currentUser } }).exec()
+
+    const likedUserIds = await Swipe.find({ userId: currentUser, action: { $in: ['Like', 'Dislike'] } }).distinct('targetUserId');
+
+    const search = await User.find({
+      _id: { $nin: likedUserIds, $ne: currentUser }
+    });
 
     return {
       info: {

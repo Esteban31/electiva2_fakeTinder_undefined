@@ -1,8 +1,15 @@
-import {Schema} from 'mongoose';
-
-
+import { Schema } from "mongoose";
 
 export const swipeSchema = new Schema({
-    userId: { type: String, required: true },
-    targetUserId: { type: String, required: true },
+  userId: {
+    type: Schema.Types.ObjectId,
+    ref: "User", 
+    required: true,
+  },
+  targetUserId: {
+    type: Schema.Types.ObjectId,
+    ref: "User", 
+    required: true,
+  },
+  action: { type: String, required: true },
 });

@@ -11,4 +11,4 @@ export const mongooseConnection = async () => {
     console.log("Connection to MongoDB established");
 };
 
-export { User };
+export { User, Swipe };

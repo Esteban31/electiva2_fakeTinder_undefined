@@ -1,11 +1,9 @@
-import {swipeActionService, getMatchSwipesService} from "../../domain/services/swipes/index.js"
+import {swipeActionService, getMatchSwipesService} from "../../domain/services/swipes/swipe.service.js"
 
-export const swipeAction = (req, res) => {
-    if (swipeActionService(req.body)) {
-        return res.status(201).send({ message: "Swiped" });
-    }else{
-        return res.status(200).send({ message: "User already liked" });
-    }
+export const swipeAction = async(req, res) => {
+
+    const resp = await swipeActionService(req.body);
+    return res.status(resp.code).send(resp.info);
 }
 
 
