@@ -45,6 +45,7 @@ export const login = async(req, res) =>{
                 "fullName": data[0].fullName,
                 "email": data[0].email,
                 "birthDate": data[0].birthDate,
+                "isNewUser": data[0].isNewUser,
                 access_token: token
             };
     

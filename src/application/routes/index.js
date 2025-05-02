@@ -15,9 +15,10 @@ import { authenticateJWT } from "../middlewares/guard.js";
 import { generateToken, login } from "../controllers/auth.controller.js";
 import {
   createUser,
-  getAvailableUsers,
+  getUsers,
   getUserById,
-  updateUser
+  updateUser,
+  updateToopics
 } from "../controllers/user.controller.js";
 
 import {swipeAction, getMatchedSwipes} from "../controllers/swipe.controller.js"
@@ -30,9 +31,10 @@ router.post("/auth/login", login);
 
 // USERS
 router.post("/users", checkUserFields, isValidPayload, createUser); //CREATE USER
-router.get("/users", authenticateJWT, checkHeaders, isValidPayload, getAvailableUsers); //GET USERS
+router.get("/users", authenticateJWT, checkHeaders, isValidPayload, getUsers); //GET USERS
 router.get("/users/:id", authenticateJWT, getUserById); //GET USER BY ID
 router.put("/users", authenticateJWT, updateUser); //UPDATE USER
+router.put("/users/toopics", authenticateJWT, updateToopics); //UPDATE TOOPICS
 
 
 // SWIPES AND MATCHS

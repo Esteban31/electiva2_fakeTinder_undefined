@@ -4,7 +4,7 @@ import { validationResult } from "express-validator";
 
 
 export const checkHeaders = [
-  header('currentUser').isEmail().notEmpty()
+  header('current-user').escape().notEmpty()
 ]
 
 export const checkUserFields = [

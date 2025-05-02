@@ -12,5 +12,4 @@ export const userSchema = new Schema({
     profilePicture:{ type: String},
     description: { type: String },
     location: { type: String },
-    likes: { type: Array}
 });

@@ -1,4 +1,4 @@
-import { createUserService, getUserByIdService, updateUserService} from "../../domain/services/users/user.service.js"
+import { createUserService, getUserByIdService, updateUserService, updateToopicsService, getFeedUserService} from "../../domain/services/users/user.service.js"
 
 
 export const createUser = async (req, res) => {
@@ -16,6 +16,9 @@ export const createUser = async (req, res) => {
 };
 
 
+
+
+// GET USER BY ID
 export const getUserById = async (req,res)=>{
 
   const resp = await getUserByIdService(req.params.id);
@@ -23,6 +26,9 @@ export const getUserById = async (req,res)=>{
 }
 
 
+
+
+// UPDATE USER
 export const updateUser = async(req,res)=>{
 
   const resp = await updateUserService(req.body)
@@ -31,9 +37,18 @@ export const updateUser = async(req,res)=>{
 }
 
 
+// UPDATE TOOPICS
+export const updateToopics = async(req,res)=>{
 
-export const getAvailableUsers = (req, res) => {
-  // const users = getUsersService(req.headers.currentuser)
+  const resp = await updateToopicsService(req.body)
+  return res.status(resp.code).send(resp.info);
+ 
+}
 
-  // res.status(200).send(users)
+
+// GET USERS DIFFERENT TO THE CURRENT USER
+export const getUsers = async(req, res) => {
+  const resp = await getFeedUserService(req.headers["current-user"])
+
+  return res.status(resp.code).send(resp.info);
 };

@@ -18,7 +18,6 @@ export const swipeActionService = (data) => {
 };
 
 export const getMatchSwipesService = (email) => {
-  console.log(email);
 
   const matches = swipes.filter(
     (item) =>
