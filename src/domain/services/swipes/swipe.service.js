@@ -1,4 +1,4 @@
-import { Swipe } from "../../../infrastructure/databases/connection.js";
+import { Swipe, Match } from "../../../infrastructure/databases/connection.js";
 import { getUserByIdService } from "../users/user.service.js";
 
 
@@ -27,6 +27,17 @@ export const swipeActionService = async(data) => {
       // Retornamos la información de cada usuario para poder mostrarla
       const person1 = await getUserByIdService(data.userId)
       const person2 = await getUserByIdService(data.targetUserId)
+
+
+
+      // Guardamos el match
+      const newMatch = new Match({
+        firstUser: data.userId,
+        secondUser: data.targetUserId,
+        historyChats: []
+      });
+  
+      await newMatch.save();
 
       return {
         info: {
@@ -57,23 +68,4 @@ export const swipeActionService = async(data) => {
       code: 200,
     };
   }
-};
-
-export const getMatchSwipesService = (email) => {
-
-  const matches = swipes.filter(
-    (item) =>
-      item.emailUser === email &&
-      item.action === "Like" &&
-      swipes.some(
-        (other) =>
-          other.emailUser === item.targetEmailUser &&
-          other.targetEmailUser === item.emailUser &&
-          other.action === "Like"
-      )
-  );
-
-  console.log(matches);
-
-  return matches;
 };

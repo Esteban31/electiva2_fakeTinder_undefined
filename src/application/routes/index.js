@@ -21,7 +21,9 @@ import {
   updateToopics
 } from "../controllers/user.controller.js";
 
-import {swipeAction, getMatchedSwipes} from "../controllers/swipe.controller.js"
+import {swipeAction} from "../controllers/swipe.controller.js"
+
+import { getMatchByUderId, addMessage } from "../controllers/match.controller.js";
 
 const router = Router();
 
@@ -39,7 +41,8 @@ router.put("/users/toopics", authenticateJWT, updateToopics); //UPDATE TOOPICS
 
 // SWIPES AND MATCHS
 router.post("/swipe", authenticateJWT, checkSwipePayload, isValidPayload, swipeAction);
-router.get("/matchs/:email", authenticateJWT, checkMatchParams, isValidPayload, getMatchedSwipes);
+router.get("/matchs/:userId", authenticateJWT, checkMatchParams, isValidPayload, getMatchByUderId);
+router.put("/matchs/messages", authenticateJWT, addMessage);
 
 
 export default router;

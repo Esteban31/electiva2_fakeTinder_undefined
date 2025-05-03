@@ -8,5 +8,5 @@ export const checkSwipePayload = [
 
 
 export const checkMatchParams = [
-    param('email').isEmail().notEmpty(),
+    param('userId').notEmpty(),
 ]
