@@ -1,0 +1,48 @@
+import { Router } from "express";
+
+// MIDDLEWARES
+import {
+  checkUserFields,
+  isValidPayload,
+  checkHeaders,
+} from "../middlewares/validators/index.validator.js";
+
+import {checkSwipePayload, checkMatchParams} from "../middlewares/validators/swipe.validator.js"
+
+import { authenticateJWT } from "../middlewares/guard.js";
+
+// CONTROLLERS
+import { generateToken, login } from "../controllers/auth.controller.js";
+import {
+  createUser,
+  getUsers,
+  getUserById,
+  updateUser,
+  updateToopics
+} from "../controllers/user.controller.js";
+
+import {swipeAction} from "../controllers/swipe.controller.js"
+
+import { getMatchByUderId, addMessage } from "../controllers/match.controller.js";
+
+const router = Router();
+
+// AUTH AND SIGNUP
+router.post("/auth", generateToken);
+router.post("/auth/login", login);
+
+// USERS
+router.post("/users", checkUserFields, isValidPayload, createUser); //CREATE USER
+router.get("/users", authenticateJWT, checkHeaders, isValidPayload, getUsers); //GET USERS
+router.get("/users/:id", authenticateJWT, getUserById); //GET USER BY ID
+router.put("/users", authenticateJWT, updateUser); //UPDATE USER
+router.put("/users/toopics", authenticateJWT, updateToopics); //UPDATE TOOPICS
+
+
+// SWIPES AND MATCHS
+router.post("/swipe", authenticateJWT, checkSwipePayload, isValidPayload, swipeAction);
+router.get("/matchs/:userId", authenticateJWT, checkMatchParams, isValidPayload, getMatchByUderId);
+router.put("/matchs/messages", authenticateJWT, addMessage);
+
+
+export default router;
