@@ -28,11 +28,14 @@ import { getMatchByUderId, addMessage } from "../controllers/match.controller.js
 const router = Router();
 
 // AUTH AND SIGNUP
+
+
+// AUTH
 router.post("/auth", generateToken);
 router.post("/auth/login", login);
 
-// USERS
-router.post("/users", checkUserFields, isValidPayload, createUser); //CREATE USER
+// USER
+router.post("/users", checkUserFields, isValidPayload, createUser);
 router.get("/users", authenticateJWT, checkHeaders, isValidPayload, getUsers); //GET USERS
 router.get("/users/:id", authenticateJWT, getUserById); //GET USER BY ID
 router.put("/users", authenticateJWT, updateUser); //UPDATE USER
