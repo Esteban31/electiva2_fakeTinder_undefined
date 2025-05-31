@@ -48,7 +48,7 @@ export const updateToopics = async(req,res)=>{
 
 // GET USERS DIFFERENT TO THE CURRENT USER
 export const getUsers = async(req, res) => {
-  const resp = await getFeedUserService(req.headers["current-user"])
+  const resp = await getFeedUserService(req.headers["current-user"], req.headers["location"])
 
   return res.status(resp.code).send(resp.info);
 };

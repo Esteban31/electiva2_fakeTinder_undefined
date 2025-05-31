@@ -123,14 +123,15 @@ export const updateToopicsService = async (user) => {
 
 
 // GET USERS DIFFERENT TO THE CURRENT USER
-export const getFeedUserService = async (currentUser) => {
+export const getFeedUserService = async (currentUser, location) => {
 
   try {
 
     const likedUserIds = await Swipe.find({ userId: currentUser, action: { $in: ['Like', 'Dislike'] } }).distinct('targetUserId');
 
     const search = await User.find({
-      _id: { $nin: likedUserIds, $ne: currentUser }
+      _id: { $nin: likedUserIds, $ne: currentUser },
+      location: location
     });
 
     return {

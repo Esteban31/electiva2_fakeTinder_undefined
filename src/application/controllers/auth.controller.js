@@ -47,6 +47,7 @@ export const login = async(req, res) =>{
                 "birthDate": data[0].birthDate,
                 "isNewUser": data[0].isNewUser,
                 "profilePicture": data[0].profilePicture,
+                "location": data[0].location,
                 access_token: token
             };
     
