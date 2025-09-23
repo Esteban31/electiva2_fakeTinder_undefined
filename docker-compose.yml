@@ -1,0 +1,27 @@
+version: "3.8"
+services:
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "4001:4001"
+
+  users-service:
+    build: ./users-service
+    ports:
+      - "4002:4002"
+
+  swipes-service:
+    build: ./swipes-service
+    ports:
+      - "4003:4003"
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "4000:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx.conf
+    depends_on:
+      - auth-service
+      - users-service
+      - swipes-service
