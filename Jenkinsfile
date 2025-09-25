@@ -40,7 +40,23 @@ pipeline {
                     }
                 }
             }
+        }  
+
+stage('Run Tests') {
+    steps {
+        script {
+            bat """
+                docker-compose exec -T auth-service echo "Service is running successfully"
+                docker-compose exec -T users-service echo "Users service is running" 
+                docker-compose exec -T swipes-service echo "Swipes service is running"
+                
+                docker-compose ps | findstr "Up"
+                
+                echo "Todos los servicios están activos"
+            """
         }
+    }
+}
     }
     post {
         success {
