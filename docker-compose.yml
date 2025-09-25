@@ -6,7 +6,7 @@ services:
       - "4001:4001"
     environment:
       - PORT=4001
-      - JWT_SECRET=${JWT_SECRET}
+      - JWT_KEY=${JWT_SECRET}
       - MONGODB_URI=${MONGODB_URI}
       - API_KEY=${API_KEY}
   users-service:
