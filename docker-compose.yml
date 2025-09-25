@@ -30,7 +30,7 @@ services:
     ports:
       - "4000:80"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf #Ruta de windows 
+      - ./nginx.conf:/etc/nginx/nginx.conf
     depends_on:
       - auth-service
       - users-service
