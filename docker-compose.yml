@@ -1,26 +1,36 @@
-version: "3.8"
 services:
   auth-service:
     build: ./auth-service
+    image: auth-service:latest
     ports:
       - "4001:4001"
-
+    environment:
+      - PORT=4001
+      - JWT_SECRET=${JWT_SECRET}
+      - MONGODB_URI=${MONGODB_URI}
+      - API_KEY=${API_KEY}
   users-service:
     build: ./users-service
+    image: users-service:latest
     ports:
       - "4002:4002"
-
+    environment:
+      - PORT=4002
+      - MONGODB_URI=${MONGODB_URI}
   swipes-service:
     build: ./swipes-service
+    image: swipes-service:latest
     ports:
       - "4003:4003"
-
+    environment:
+      - PORT=4003
+      - MONGODB_URI=${MONGODB_URI}
   nginx:
     image: nginx:latest
     ports:
       - "4000:80"
     volumes:
-      - ./nginx.conf:/etc/nginx.conf
+      - ./nginx.conf:/etc/nginx/nginx.conf #Ruta de windows #prueba webhooks
     depends_on:
       - auth-service
       - users-service
