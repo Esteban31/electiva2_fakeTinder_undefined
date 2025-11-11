@@ -1,0 +1,35 @@
+{
+  "name": "faketinder-backend",
+  "type": "module",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node --watch index.js",
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Esteban31/fakeTinder-backend.git"
+  },
+  "author": "Juan Calle",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Esteban31/fakeTinder-backend/issues"
+  },
+  "homepage": "https://github.com/Esteban31/fakeTinder-backend#readme",
+  "description": "",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "express-validator": "^7.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.12.2",
+    "socket.io": "^4.8.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "@babel/core": "^7.27.4"
+  }
+}

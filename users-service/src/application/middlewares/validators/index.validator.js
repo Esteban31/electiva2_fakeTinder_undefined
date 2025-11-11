@@ -1,0 +1,24 @@
+import { body, header } from 'express-validator';
+
+import { validationResult } from "express-validator";
+
+
+export const checkHeaders = [
+  header('current-user').escape().notEmpty()
+]
+
+export const checkUserFields = [
+    body('email').isEmail(),
+    body('password').notEmpty(),
+    body('birthDate').notEmpty(),
+    body('fullName').escape().notEmpty()
+]
+
+export const isValidPayload = (req,res, next) => {
+    const result = validationResult(req);
+    if (result.isEmpty()) {
+      return next()
+    }
+  
+    res.send({ errors: result.array() });
+}
