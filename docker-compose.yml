@@ -36,5 +36,3 @@ services:
       - auth-service
       - users-service
       - swipes-service
-
-    #Este es una prueba para pipeline de jenkins en push
