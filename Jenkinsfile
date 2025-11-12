@@ -71,22 +71,5 @@ EOF
         failure {
             echo "❌ Pipeline no completado"
         }
-
-        always {
-            echo "🧹 Limpiando entorno..."
-
-            sh '''
-                echo "🗑️ Eliminando archivo .env..."
-                rm -f .env || true
-
-                echo "🧼 Limpiando Docker..."
-                docker compose -f "${DOCKER_COMPOSE_FILE}" --project-name "${COMPOSE_PROJECT_NAME}" down -v --remove-orphans || true
-                docker system prune -af --volumes || true
-                docker builder prune -af || true
-
-                echo "🧽 Limpiando workspace (excepto Jenkinsfile y config)..."
-                find . -mindepth 1 ! -name "Jenkinsfile" ! -name "docker-compose.yml" -exec rm -rf {} +
-            '''
-        }
     }
 }
