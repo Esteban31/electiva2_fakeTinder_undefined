@@ -7,6 +7,15 @@ pipeline {
     }
 
     stages {
+        stage('Clean Previous Containers') {
+            steps {
+                script {
+                    echo "🧹 Deteniendo y eliminando contenedores anteriores..."
+                    sh "docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} down --remove-orphans"
+                }
+            }
+        }
+
         stage('Setup Environment') {
             steps {
                 echo '⚙️ Configurando variables de entorno...'
@@ -24,52 +33,37 @@ API_KEY=${API_KEY}
 EOF
                     '''
                 }
-            }
-        }
 
-        stage('Check Running Containers') {
-            steps {
-                echo '🔍 Verificando que los contenedores ya estén activos...'
-                sh '''
-                    RUNNING=$(docker compose -f "${DOCKER_COMPOSE_FILE}" ps -q)
-                    if [ -z "$RUNNING" ]; then
-                        echo "⚠️ No hay contenedores activos. Debes iniciarlos manualmente con:"
-                        echo "   docker compose -f ${DOCKER_COMPOSE_FILE} up -d"
-                        exit 1
-                    else
-                        echo "✅ Contenedores activos detectados:"
-                        docker compose -f "${DOCKER_COMPOSE_FILE}" ps
-                    fi
-                '''
+                script {
+                    echo '🚀 Levantando contenedores con Docker Compose...'
+                    sh "docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} up -d --build"
+                }
             }
         }
 
         stage('Run Health Checks') {
             steps {
-                echo '🧪 Verificando que los servicios estén respondiendo...'
-                sh '''
-                    docker compose -f "${DOCKER_COMPOSE_FILE}" exec -T auth-service echo "Auth OK"
-                    docker compose -f "${DOCKER_COMPOSE_FILE}" exec -T users-service echo "Users OK"
-                    docker compose -f "${DOCKER_COMPOSE_FILE}" exec -T swipes-service echo "Swipes OK"
-
-                    echo "📋 Estado final de los contenedores:"
-                    docker compose -f "${DOCKER_COMPOSE_FILE}" ps
-
-                    echo "✅ Todos los servicios están funcionando correctamente"
-                '''
+                script {
+                    echo '🔍 Verificando que los servicios estén activos...'
+                    sh """
+                        docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} exec -T auth-service echo "Auth service is running"
+                        docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} exec -T users-service echo "Users service is running"
+                        docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} exec -T swipes-service echo "Swipes service is running"
+                        docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} ps
+                        echo "✅ Todos los servicios están activos"
+                    """
+                }
             }
         }
     }
 
     post {
         success {
-            echo "🎉 Pipeline completado exitosamente sin recrear contenedores"
+            echo "🎉 Pipeline completado exitosamente"
         }
-
         failure {
             echo "❌ Pipeline falló. Revisa que los contenedores estén activos"
         }
-
         always {
             echo "🧹 Limpiando entorno mínimo..."
             sh 'rm -f .env'
