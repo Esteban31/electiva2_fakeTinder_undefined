@@ -33,11 +33,6 @@ API_KEY=${API_KEY}
 EOF
                     '''
                 }
-
-                script {
-                    echo '🚀 Levantando contenedores con Docker Compose...'
-                    sh "docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} up -d --build"
-                }
             }
         }
 
