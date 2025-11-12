@@ -1,9 +1,11 @@
 pipeline {
     agent any
+
     environment {
         DOCKER_COMPOSE_FILE = 'docker compose.yml'
         COMPOSE_PROJECT_NAME = 'faketinder'
     }
+
     stages {
         stage('Setup Environment') {
             steps {
@@ -22,42 +24,59 @@ EOF
                 }
             }
         }
+
         stage('Clean Previous Containers') {
             steps {
-                sh "docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} down --remove-orphans"
+                echo '🧹 Eliminando contenedores y redes anteriores...'
+                sh "docker compose -f '${DOCKER_COMPOSE_FILE}' --project-name '${COMPOSE_PROJECT_NAME}' down --remove-orphans"
             }
         }
+
         stage('Build & Run Services') {
             steps {
-                sh "docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} build"
-                sh "docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} up -d"
+                echo '⚙️ Construyendo imágenes y levantando servicios...'
+                sh "docker compose -f '${DOCKER_COMPOSE_FILE}' --project-name '${COMPOSE_PROJECT_NAME}' build"
+                sh "docker compose -f '${DOCKER_COMPOSE_FILE}' --project-name '${COMPOSE_PROJECT_NAME}' up -d"
             }
-        }  
+        }
 
         stage('Run Tests') {
             steps {
+                echo '🧪 Verificando que los servicios estén activos...'
                 sh '''
-                    docker compose exec -T auth-service echo "Service is running successfully"
-                    docker compose exec -T users-service echo "Users service is running" 
-                    docker compose exec -T swipes-service echo "Swipes service is running"
-                    
+                    docker compose exec -T auth-service echo "Auth OK"
+                    docker compose exec -T users-service echo "Users OK"
+                    docker compose exec -T swipes-service echo "Swipes OK"
                     docker compose ps | grep "Up"
-                    
-                    echo "Todos los servicios están activos"
+                    echo "✅ Todos los servicios están activos"
                 '''
             }
         }
     }
+
     post {
         success {
-            echo "Pipeline completado exitosamente"
+            echo "🎉 Pipeline completado exitosamente"
         }
         failure {
-            echo "Pipeline no completado"
+            echo "❌ Pipeline no completado"
         }
         always {
-            echo "Pipeline finalizado"
+            echo "🧹 Limpiando entorno..."
+
+            // Eliminar archivo .env temporal
             sh 'rm -f .env'
+
+            // Detener y eliminar contenedores, imágenes, volúmenes y cachés no usados
+            sh '''
+                echo "🧼 Limpiando Docker..."
+                docker compose -f '${DOCKER_COMPOSE_FILE}' --project-name '${COMPOSE_PROJECT_NAME}' down -v --remove-orphans || true
+                docker system prune -af --volumes || true
+                docker builder prune -af || true
+
+                echo "🧽 Limpiando workspace..."
+                rm -rf * || true
+            '''
         }
     }
 }
