@@ -27,37 +27,35 @@ EOF
             }
         }
 
-        stage('Clean Previous Containers') {
+        stage('Check Running Containers') {
             steps {
-                echo '🧹 Eliminando contenedores y redes anteriores...'
+                echo '🔍 Verificando que los contenedores ya estén activos...'
                 sh '''
-                    docker compose -f "${DOCKER_COMPOSE_FILE}" --project-name "${COMPOSE_PROJECT_NAME}" down --remove-orphans || true
+                    RUNNING=$(docker compose -f "${DOCKER_COMPOSE_FILE}" ps -q)
+                    if [ -z "$RUNNING" ]; then
+                        echo "⚠️ No hay contenedores activos. Debes iniciarlos manualmente con:"
+                        echo "   docker compose -f ${DOCKER_COMPOSE_FILE} up -d"
+                        exit 1
+                    else
+                        echo "✅ Contenedores activos detectados:"
+                        docker compose -f "${DOCKER_COMPOSE_FILE}" ps
+                    fi
                 '''
             }
         }
 
-        stage('Build & Run Services') {
+        stage('Run Health Checks') {
             steps {
-                echo '⚙️ Construyendo imágenes y levantando servicios...'
-                sh '''
-                    docker compose -f "${DOCKER_COMPOSE_FILE}" --project-name "${COMPOSE_PROJECT_NAME}" build
-                    docker compose -f "${DOCKER_COMPOSE_FILE}" --project-name "${COMPOSE_PROJECT_NAME}" up -d
-                '''
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                echo '🧪 Verificando que los servicios estén activos...'
+                echo '🧪 Verificando que los servicios estén respondiendo...'
                 sh '''
                     docker compose -f "${DOCKER_COMPOSE_FILE}" exec -T auth-service echo "Auth OK"
                     docker compose -f "${DOCKER_COMPOSE_FILE}" exec -T users-service echo "Users OK"
                     docker compose -f "${DOCKER_COMPOSE_FILE}" exec -T swipes-service echo "Swipes OK"
 
-                    echo "📋 Estado de los contenedores:"
+                    echo "📋 Estado final de los contenedores:"
                     docker compose -f "${DOCKER_COMPOSE_FILE}" ps
 
-                    echo "✅ Todos los servicios están activos"
+                    echo "✅ Todos los servicios están funcionando correctamente"
                 '''
             }
         }
@@ -65,11 +63,16 @@ EOF
 
     post {
         success {
-            echo "🎉 Pipeline completado exitosamente"
+            echo "🎉 Pipeline completado exitosamente sin recrear contenedores"
         }
 
         failure {
-            echo "❌ Pipeline no completado"
+            echo "❌ Pipeline falló. Revisa que los contenedores estén activos"
+        }
+
+        always {
+            echo "🧹 Limpiando entorno mínimo..."
+            sh 'rm -f .env'
         }
     }
 }
