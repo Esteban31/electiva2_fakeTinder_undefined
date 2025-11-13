@@ -93,7 +93,7 @@ resource "aws_instance" "faketinder_ec2" {
               echo "JWT_EXPIRES_IN=3600" >> .env
               echo "MONGODB_URI=${var.mongodb_uri}" >> .env
 
-              docker compose up -d --build
+              docker-compose up -d --build
               EOF
 
   tags = {
