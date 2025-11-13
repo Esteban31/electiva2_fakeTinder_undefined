@@ -2,24 +2,27 @@ pipeline {
     agent any
 
     environment {
-        TERRAFORM_DIR = 'infra'
-        AWS_DEFAULT_REGION = 'us-east-1'
+        DOCKER_COMPOSE_FILE = 'docker-compose.yml'
+        COMPOSE_PROJECT_NAME = 'faketinder'
+        TERRAFORM_DIR = 'infra' // Carpeta con tus archivos .tf
     }
 
     stages {
-        stage('Deploy Infrastructure') {
+        stage('Provision Infrastructure (Terraform)') {
             steps {
-                echo "🚀 Desplegando infraestructura con Terraform..."
+                echo "🌍 Desplegando infraestructura con Terraform..."
                 dir("${TERRAFORM_DIR}") {
                     withCredentials([
                         string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
-                        string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
-                        string(credentialsId: 'jwt-key', variable: 'TF_VAR_jwt_key'),
-                        string(credentialsId: 'mongodb-uri', variable: 'TF_VAR_mongodb_uri')
+                        string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
                     ]) {
                         sh '''
+                            echo "🔑 Configurando variables AWS para Terraform..."
+                            export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+                            export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+                            export AWS_DEFAULT_REGION=us-east-1
+
                             terraform init -input=false
-                            terraform validate
                             terraform apply -auto-approve -input=false
                         '''
                     }
@@ -27,69 +30,53 @@ pipeline {
             }
         }
 
-        stage('Get Deployment Info') {
+        stage('Clean Previous Containers') {
             steps {
-                dir("${TERRAFORM_DIR}") {
-                    script {
-                        env.EC2_IP = sh(
-                            script: 'terraform output -raw ec2_public_ip',
-                            returnStdout: true
-                        ).trim()
-                        
-                        echo "📍 IP de EC2: ${env.EC2_IP}"
-                    }
+                script {
+                    echo "🧹 Deteniendo y eliminando contenedores anteriores..."
+                    sh 'docker-compose -f docker-compose.yml --project-name faketinder down --remove-orphans || true'
                 }
             }
         }
 
-        stage('Health Check') {
+        stage('Setup Environment') {
             steps {
-                script {
-                    echo "🔍 Verificando disponibilidad de la aplicación..."
-                    
-                    def maxRetries = 20
-                    def retryCount = 0
-                    def isHealthy = false
-                    
-                    while (retryCount < maxRetries && !isHealthy) {
-                        def status = sh(
-                            script: "curl -s -o /dev/null -w '%{http_code}' http://${env.EC2_IP}:4000 || echo '000'",
-                            returnStdout: true
-                        ).trim()
-                        
-                        if (status == '200' || status == '404' || status == '502') {
-                            echo "✅ Aplicación respondiendo (HTTP ${status})"
-                            isHealthy = true
-                        } else {
-                            retryCount++
-                            echo "⏳ Intento ${retryCount}/${maxRetries} - Esperando inicialización..."
-                            sleep(15)
-                        }
-                    }
-                    
-                    if (!isHealthy) {
-                        echo "⚠️  La aplicación aún se está iniciando. Verifica manualmente."
-                    }
+                echo '⚙️ Configurando variables de entorno...'
+                withCredentials([
+                    string(credentialsId: 'jwt-key', variable: 'JWT_KEY'),
+                    string(credentialsId: 'mongodb-uri', variable: 'MONGODB_URI')
+                ]) {
+                    sh '''
+                        echo "📝 Creando archivo .env ..."
+                        cat > .env << EOF
+PORT=4003
+JWT_KEY=${JWT_KEY}
+JWT_EXPIRES_IN=3600
+MONGODB_URI=${MONGODB_URI}
+EOF
+                    '''
                 }
             }
         }
 
-        stage('Show Access Info') {
+        stage('Build and Run Containers') {
+            steps {
+                echo "🚀 Construyendo y levantando contenedores..."
+                sh 'docker-compose -f docker-compose.yml --project-name faketinder up -d --build'
+            }
+        }
+
+        stage('Run Health Checks') {
             steps {
                 script {
-                    echo """
-                    ═══════════════════════════════════════════════
-                    ✅ DESPLIEGUE COMPLETADO
-                    ═══════════════════════════════════════════════
-                    
-                    🌐 URL: http://${env.EC2_IP}:4000
-                    
-                    📡 Servicios:
-                    • Auth:   http://${env.EC2_IP}:4001
-                    • Users:  http://${env.EC2_IP}:4002
-                    • Swipes: http://${env.EC2_IP}:4003
-                    
-                    ═══════════════════════════════════════════════
+                    echo '🔍 Verificando que los servicios estén activos...'
+                    // FIXED: Changed all 'docker compose' to 'docker-compose'
+                    sh """
+                        docker-compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} ps
+                        docker-compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} exec -T auth-service echo "Auth service is running"
+                        docker-compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} exec -T users-service echo "Users service is running"
+                        docker-compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} exec -T swipes-service echo "Swipes service is running"
+                        echo "✅ Todos los servicios están activos"
                     """
                 }
             }
@@ -101,10 +88,11 @@ pipeline {
             echo "🎉 Pipeline completado exitosamente"
         }
         failure {
-            echo "❌ Pipeline falló"
-            dir("${TERRAFORM_DIR}") {
-                sh 'terraform show || true'
-            }
+            echo "❌ Pipeline falló. Revisa que los contenedores estén activos o las credenciales AWS."
+        }
+        always {
+            echo "🧹 Limpiando entorno mínimo..."
+            sh 'rm -f .env || true'
         }
     }
 }
