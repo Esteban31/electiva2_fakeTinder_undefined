@@ -5,6 +5,7 @@ pipeline {
         DOCKER_COMPOSE_FILE = 'docker-compose.yml'
         COMPOSE_PROJECT_NAME = 'faketinder'
         TERRAFORM_DIR = 'infra'
+        AWS_REGION = 'us-east-1'
     }
 
     stages {
@@ -14,19 +15,20 @@ pipeline {
                 dir("${TERRAFORM_DIR}") {
                     withCredentials([
                         string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
-                        string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                        string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
+                        file(credentialsId: 'ssh-key', variable: 'SSH_KEY') // <-- Clave PEM
                     ]) {
                         sh '''
                             echo "🔑 Configurando credenciales AWS..."
                             export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
                             export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-                            export AWS_DEFAULT_REGION=us-east-1
+                            export AWS_DEFAULT_REGION=${AWS_REGION}
 
                             echo "📦 Inicializando Terraform..."
                             terraform init -input=false
 
                             echo "🚀 Aplicando Terraform..."
-                            terraform apply -auto-approve -input=false
+                            terraform apply -var "ssh_private_key_path=$SSH_KEY" -auto-approve -input=false
 
                             echo "✅ Despliegue en EC2 completado"
                         '''
