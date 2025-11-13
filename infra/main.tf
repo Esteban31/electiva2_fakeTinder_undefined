@@ -41,23 +41,23 @@ resource "null_resource" "deploy_app" {
     host        = data.aws_instance.existing_ec2.public_ip
   }
 
-  # Copiar archivos del proyecto
-  provisioner "file" {
-    source      = "../"
-    destination = "/home/ubuntu/faketinder"
-  }
-
-  # Crear .env y levantar contenedores
+  # Clonar o actualizar el repositorio y desplegar
   provisioner "remote-exec" {
     inline = [
-      "cd /home/ubuntu/faketinder",
+      "echo 'Actualizando código desde Git...'",
+      "cd /home/ubuntu",
+      "if [ -d 'faketinder' ]; then cd faketinder && git pull origin ${var.git_branch} && cd ..; else git clone -b ${var.git_branch} ${var.git_repo_url} faketinder; fi",
+      "cd faketinder",
+      "echo 'Configurando variables de entorno...'",
       "echo 'PORT=4003' > .env",
       "echo 'JWT_KEY=${var.jwt_key}' >> .env",
       "echo 'JWT_EXPIRES_IN=3600' >> .env",
       "echo 'MONGODB_URI=${var.mongodb_uri}' >> .env",
+      "echo 'Deteniendo contenedores anteriores...'",
       "sudo docker-compose down || true",
+      "echo 'Levantando contenedores...'",
       "sudo docker-compose up -d --build",
-      "echo 'Despliegue completado!'"
+      "echo 'Despliegue completado exitosamente!'"
     ]
   }
 }

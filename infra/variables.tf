@@ -31,3 +31,15 @@ variable "mongodb_uri" {
   type        = string
   sensitive   = true
 }
+
+variable "git_repo_url" {
+  description = "URL del repositorio Git"
+  type        = string
+  default     = "https://github.com/electiva3-tdea/electiva2_fakeTinder_undefined.git"
+}
+
+variable "git_branch" {
+  description = "Rama de Git a desplegar"
+  type        = string
+  default     = "example"
+}
