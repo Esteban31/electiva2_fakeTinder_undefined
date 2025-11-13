@@ -20,37 +20,43 @@ provider "aws" {
 # SECURITY GROUP #
 ##################
 
-resource "aws_security_group" "faketinder_sg" {
-  name        = "faketinder-sg"
-  description = "Allow HTTP, HTTPS, SSH and app ports"
+# COMENTADO: Ya no creamos el security group, usamos el existente
+# resource "aws_security_group" "faketinder_sg" {
+#   name        = "faketinder-sg"
+#   description = "Allow HTTP, HTTPS, SSH and app ports"
+#
+#   ingress {
+#     from_port   = 22
+#     to_port     = 22
+#     protocol    = "tcp"
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+#
+#   ingress {
+#     from_port   = 80
+#     to_port     = 80
+#     protocol    = "tcp"
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+#
+#   ingress {
+#     from_port   = 4003
+#     to_port     = 4003
+#     protocol    = "tcp"
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+#
+#   egress {
+#     from_port   = 0
+#     to_port     = 0
+#     protocol    = "-1"
+#     cidr_blocks = ["0.0.0.0/0"]
+#   }
+# }
 
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 4003
-    to_port     = 4003
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+# NUEVO: Referencia al security group existente
+data "aws_security_group" "faketinder_sg" {
+  id = "sg-0a5aa30c07592243a"
 }
 
 ###############
@@ -61,7 +67,7 @@ resource "aws_instance" "faketinder_ec2" {
   ami                         = var.ami_id
   instance_type               = var.instance_type != "" ? var.instance_type : "t3.micro"
   key_name                    = var.key_name
-  vpc_security_group_ids      = [aws_security_group.faketinder_sg.id]
+  vpc_security_group_ids      = [data.aws_security_group.faketinder_sg.id]  # Cambio aquí: ahora usa data en vez de resource
   associate_public_ip_address = true
 
   user_data = <<-EOF
