@@ -31,7 +31,6 @@ pipeline {
                             terraform apply -var "ssh_private_key_path=$SSH_KEY" -auto-approve -input=false
 
                             echo "✅ Despliegue completado!"
-                            echo "📍 Revisa los outputs de Terraform arriba para ver la IP de tu EC2"
                         '''
                     }
                 }
@@ -42,7 +41,6 @@ pipeline {
     post {
         success {
             echo "🎉 Despliegue completado exitosamente en EC2"
-            echo "🌐 Accede a tu aplicación en: http://<IP_EC2>:4000"
         }
         failure {
             echo "❌ El despliegue falló. Revisa los logs de Terraform arriba."
