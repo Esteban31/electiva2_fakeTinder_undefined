@@ -16,7 +16,7 @@ pipeline {
                     withCredentials([
                         string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
                         string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
-                        file(credentialsId: 'ssh-key', variable: 'SSH_KEY') // <-- Clave PEM
+                        file(credentialsId: 'ssh-key', variable: 'SSH_KEY')
                     ]) {
                         sh '''
                             echo "🔑 Configurando credenciales AWS..."
@@ -30,58 +30,10 @@ pipeline {
                             echo "🚀 Aplicando Terraform..."
                             terraform apply -var "ssh_private_key_path=$SSH_KEY" -auto-approve -input=false
 
-                            echo "✅ Despliegue en EC2 completado"
+                            echo "✅ Despliegue completado!"
+                            echo "📍 Revisa los outputs de Terraform arriba para ver la IP de tu EC2"
                         '''
                     }
-                }
-            }
-        }
-
-        stage('Clean Previous Containers') {
-            steps {
-                script {
-                    echo "🧹 Deteniendo contenedores anteriores..."
-                    sh 'docker-compose -f docker-compose.yml --project-name faketinder down --remove-orphans || true'
-                }
-            }
-        }
-
-        stage('Setup Environment') {
-            steps {
-                echo '⚙️ Configurando variables de entorno...'
-                withCredentials([
-                    string(credentialsId: 'jwt-key', variable: 'JWT_KEY'),
-                    string(credentialsId: 'mongodb-uri', variable: 'MONGODB_URI')
-                ]) {
-                    sh '''
-                        echo "📝 Creando archivo .env ..."
-                        cat > .env << EOF
-PORT=4003
-JWT_KEY=${JWT_KEY}
-JWT_EXPIRES_IN=3600
-MONGODB_URI=${MONGODB_URI}
-EOF
-                    '''
-                }
-            }
-        }
-
-        stage('Build and Run Containers') {
-            steps {
-                echo "🚀 Construyendo y levantando contenedores..."
-                sh 'docker-compose -f docker-compose.yml --project-name faketinder up -d --build'
-            }
-        }
-
-        stage('Verify Services') {
-            steps {
-                script {
-                    echo '🔍 Verificando servicios...'
-                    sh """
-                        sleep 5
-                        docker-compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} ps
-                        echo "✅ Servicios desplegados"
-                    """
                 }
             }
         }
@@ -89,14 +41,11 @@ EOF
 
     post {
         success {
-            echo "🎉 Despliegue completado exitosamente"
+            echo "🎉 Despliegue completado exitosamente en EC2"
+            echo "🌐 Accede a tu aplicación en: http://<IP_EC2>:4000"
         }
         failure {
-            echo "❌ El despliegue falló. Revisa los logs de los contenedores."
-        }
-        always {
-            echo "🧹 Limpiando archivos temporales..."
-            sh 'rm -f .env || true'
+            echo "❌ El despliegue falló. Revisa los logs de Terraform arriba."
         }
     }
 }
