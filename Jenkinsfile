@@ -8,7 +8,7 @@ pipeline {
     }
 
     stages {
-       stage('Provision Infrastructure (Terraform)') {
+        stage('Provision Infrastructure (Terraform)') {
             steps {
                 echo "🌍 Desplegando infraestructura con Terraform..."
                 dir("${TERRAFORM_DIR}") {
@@ -30,14 +30,11 @@ pipeline {
             }
         }
 
-
-
-
         stage('Clean Previous Containers') {
             steps {
                 script {
                     echo "🧹 Deteniendo y eliminando contenedores anteriores..."
-                    sh "docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} down --remove-orphans || true"
+                    sh 'docker-compose -f docker-compose.yml --project-name faketinder down --remove-orphans || true'
                 }
             }
         }
@@ -64,8 +61,8 @@ EOF
 
         stage('Build and Run Containers') {
             steps {
-                echo '🚀 Construyendo y levantando contenedores...'
-                sh "docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} up -d --build"
+                echo "🚀 Construyendo y levantando contenedores..."
+                sh 'docker-compose -f docker-compose.yml --project-name faketinder up -d --build'
             }
         }
 
@@ -73,11 +70,12 @@ EOF
             steps {
                 script {
                     echo '🔍 Verificando que los servicios estén activos...'
+                    // FIXED: Changed all 'docker compose' to 'docker-compose'
                     sh """
-                        docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} ps
-                        docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} exec -T auth-service echo "Auth service is running"
-                        docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} exec -T users-service echo "Users service is running"
-                        docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} exec -T swipes-service echo "Swipes service is running"
+                        docker-compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} ps
+                        docker-compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} exec -T auth-service echo "Auth service is running"
+                        docker-compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} exec -T users-service echo "Users service is running"
+                        docker-compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} exec -T swipes-service echo "Swipes service is running"
                         echo "✅ Todos los servicios están activos"
                     """
                 }
