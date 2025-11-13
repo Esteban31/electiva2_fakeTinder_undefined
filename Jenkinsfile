@@ -4,7 +4,8 @@ pipeline {
     environment {
         DOCKER_COMPOSE_FILE = 'docker-compose.yml'
         COMPOSE_PROJECT_NAME = 'faketinder'
-        TERRAFORM_DIR = 'infra' // Carpeta con tus archivos .tf
+        TERRAFORM_DIR = 'infra'
+        AWS_DEFAULT_REGION = 'us-east-1'
     }
 
     stages {
@@ -14,19 +15,35 @@ pipeline {
                 dir("${TERRAFORM_DIR}") {
                     withCredentials([
                         string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
-                        string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                        string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
+                        string(credentialsId: 'jwt-key', variable: 'TF_VAR_jwt_key'),
+                        string(credentialsId: 'mongodb-uri', variable: 'TF_VAR_mongodb_uri')
                     ]) {
                         sh '''
-                            echo "🔑 Configurando variables AWS para Terraform..."
-                            export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-                            export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-                            export AWS_DEFAULT_REGION=us-east-1
-
+                            echo "🔑 Inicializando Terraform..."
                             terraform init -input=false
-                            terraform apply -auto-approve -input=false
+                            
+                            echo "🔍 Validando configuración de Terraform..."
+                            terraform validate
+                            
+                            echo "📋 Planificando infraestructura..."
+                            terraform plan -out=tfplan -input=false
+                            
+                            echo "🚀 Aplicando infraestructura..."
+                            terraform apply -input=false tfplan
+                            
+                            echo "✅ Infraestructura desplegada"
+                            terraform output
                         '''
                     }
                 }
+            }
+        }
+
+        stage('Wait for EC2 Initialization') {
+            steps {
+                echo "⏳ Esperando a que la instancia EC2 se inicialice..."
+                sleep(time: 120, unit: 'SECONDS')
             }
         }
 
@@ -70,7 +87,6 @@ EOF
             steps {
                 script {
                     echo '🔍 Verificando que los servicios estén activos...'
-                    // FIXED: Changed all 'docker compose' to 'docker-compose'
                     sh """
                         docker-compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} ps
                         docker-compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} exec -T auth-service echo "Auth service is running"
@@ -86,9 +102,15 @@ EOF
     post {
         success {
             echo "🎉 Pipeline completado exitosamente"
+            dir("${TERRAFORM_DIR}") {
+                sh 'terraform output ec2_public_ip || true'
+            }
         }
         failure {
-            echo "❌ Pipeline falló. Revisa que los contenedores estén activos o las credenciales AWS."
+            echo "❌ Pipeline falló. Revisa los logs de Terraform y Docker."
+            dir("${TERRAFORM_DIR}") {
+                sh 'terraform show || true'
+            }
         }
         always {
             echo "🧹 Limpiando entorno mínimo..."
