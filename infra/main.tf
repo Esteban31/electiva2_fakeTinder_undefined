@@ -64,18 +64,18 @@ resource "null_resource" "deploy_app" {
       "echo 'Archivo .env creado correctamente'",
       "cat .env | head -2",
       "echo '=== Deteniendo contenedores anteriores ==='",
-      "sudo docker-compose down 2>/dev/null || echo 'No hay contenedores previos'",
+      "sudo docker compose down 2>/dev/null || echo 'No hay contenedores previos'",
       "echo '=== Limpiando imágenes antiguas ==='",
       "sudo docker system prune -f || true",
       "echo '=== Construyendo imágenes (esto puede tardar varios minutos) ==='",
-      "sudo docker-compose build --no-cache 2>&1 | tail -20",
+      "sudo docker compose build --no-cache 2>&1 | tail -20",
       "echo '=== Levantando contenedores ==='",
-      "sudo docker-compose up -d 2>&1",
+      "sudo docker compose up -d 2>&1",
       "sleep 5",
       "echo '=== Estado de contenedores ==='",
       "sudo docker ps -a",
       "echo '=== Logs recientes ==='",
-      "sudo docker-compose logs --tail=10 || true",
+      "sudo docker compose logs --tail=10 || true",
       "echo '=== Despliegue completado! ==='"
     ]
   }
