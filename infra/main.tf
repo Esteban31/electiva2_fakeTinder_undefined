@@ -20,43 +20,37 @@ provider "aws" {
 # SECURITY GROUP #
 ##################
 
-# COMENTADO: Ya no creamos el security group, usamos el existente
-# resource "aws_security_group" "faketinder_sg" {
-#   name        = "faketinder-sg"
-#   description = "Allow HTTP, HTTPS, SSH and app ports"
-#
-#   ingress {
-#     from_port   = 22
-#     to_port     = 22
-#     protocol    = "tcp"
-#     cidr_blocks = ["0.0.0.0/0"]
-#   }
-#
-#   ingress {
-#     from_port   = 80
-#     to_port     = 80
-#     protocol    = "tcp"
-#     cidr_blocks = ["0.0.0.0/0"]
-#   }
-#
-#   ingress {
-#     from_port   = 4003
-#     to_port     = 4003
-#     protocol    = "tcp"
-#     cidr_blocks = ["0.0.0.0/0"]
-#   }
-#
-#   egress {
-#     from_port   = 0
-#     to_port     = 0
-#     protocol    = "-1"
-#     cidr_blocks = ["0.0.0.0/0"]
-#   }
-# }
+resource "aws_security_group" "faketinder_sg" {
+  name        = "faketinder-sg"
+  description = "Allow HTTP, HTTPS, SSH and app ports"
 
-# NUEVO: Referencia al security group existente
-data "aws_security_group" "faketinder_sg" {
-  id = "sg-0a5aa30c07592243a"
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 4003
+    to_port     = 4003
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 ###############
@@ -67,15 +61,28 @@ resource "aws_instance" "faketinder_ec2" {
   ami                         = var.ami_id
   instance_type               = var.instance_type != "" ? var.instance_type : "t3.micro"
   key_name                    = var.key_name
-  vpc_security_group_ids      = [data.aws_security_group.faketinder_sg.id]  # Cambio aquí: ahora usa data en vez de resource
+  vpc_security_group_ids      = [aws_security_group.faketinder_sg.id]
   associate_public_ip_address = true
 
   user_data = <<-EOF
               #!/bin/bash
               apt update -y
+              apt-get upgrade -y
+
               apt install -y docker.io docker-compose git
+
               systemctl enable docker
               systemctl start docker
+
+              usermod -aG docker ubuntu
+
+              if id "jenkins" &>/dev/null; then
+                usermod -aG docker jenkins
+              fi
+
+              chmod 666 /var/run/docker.sock
+
+              systemctl restart docker
 
               cd /home/ubuntu
               git clone ${var.git_repo_url} faketinder
