@@ -13,8 +13,6 @@ import { swaggerSpec } from './src/infrastructure/documentation/swaggerConfig.js
 // process.loadEnvFile(); // No es necesario, Docker Compose ya inyecta las variables de entorno
 
 
-
-
 mongooseConnection();
 
 const app = express();
