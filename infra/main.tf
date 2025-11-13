@@ -44,20 +44,24 @@ resource "null_resource" "deploy_app" {
   # Clonar o actualizar el repositorio y desplegar
   provisioner "remote-exec" {
     inline = [
-      "echo 'Actualizando código desde Git...'",
+      "set -e",
+      "echo '=== Actualizando código desde Git ==='",
       "cd /home/ubuntu",
-      "if [ -d 'faketinder' ]; then cd faketinder && git pull origin ${var.git_branch} && cd ..; else git clone -b ${var.git_branch} ${var.git_repo_url} faketinder; fi",
-      "cd faketinder",
-      "echo 'Configurando variables de entorno...'",
-      "echo 'PORT=4003' > .env",
-      "echo 'JWT_KEY=${var.jwt_key}' >> .env",
-      "echo 'JWT_EXPIRES_IN=3600' >> .env",
-      "echo 'MONGODB_URI=${var.mongodb_uri}' >> .env",
-      "echo 'Deteniendo contenedores anteriores...'",
-      "sudo docker-compose down || true",
-      "echo 'Levantando contenedores...'",
-      "sudo docker-compose up -d --build",
-      "echo 'Despliegue completado exitosamente!'"
+      "if [ -d 'faketinder' ]; then cd faketinder && git pull origin ${var.git_branch}; else git clone -b ${var.git_branch} ${var.git_repo_url} faketinder; fi",
+      "cd /home/ubuntu/faketinder",
+      "echo '=== Configurando variables de entorno ==='",
+      "cat > .env << 'ENVEOF'\nPORT=4003\nJWT_KEY=${var.jwt_key}\nJWT_EXPIRES_IN=3600\nMONGODB_URI=${var.mongodb_uri}\nENVEOF",
+      "echo '=== Deteniendo contenedores anteriores ==='",
+      "sudo docker-compose down 2>/dev/null || echo 'No hay contenedores previos'",
+      "echo '=== Construyendo imágenes ==='",
+      "sudo docker-compose build",
+      "echo '=== Levantando contenedores ==='",
+      "sudo docker-compose up -d",
+      "echo '=== Verificando contenedores ==='",
+      "sleep 3",
+      "sudo docker-compose ps",
+      "sudo docker ps",
+      "echo '=== Despliegue completado exitosamente! ==='"
     ]
   }
 }
