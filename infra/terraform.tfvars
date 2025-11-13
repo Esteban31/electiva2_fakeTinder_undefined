@@ -7,7 +7,7 @@ ec2_instance_id = "i-035f7c40ec359b95b"  # Ejemplo: "i-0123456789abcdef0"
 ssh_user = "ubuntu"
 
 # Ruta a tu archivo .pem (cambia esto por tu ruta real)
-ssh_private_key_path = "C:/Users/Johnatan/Downloads/Fake-Tinder.pem"  # Ejemplo: "C:/Users/TuUsuario/Downloads/mi-key.pem"
+#ssh_private_key_path = "C:/Users/Johnatan/Downloads/Fake-Tinder.pem"  # Ejemplo: "C:/Users/TuUsuario/Downloads/mi-key.pem"
 
 jwt_key      = "T9bXgiY95j6F"
 mongodb_uri  = "mongodb+srv://fakeTinderUser:XN9PbzRYqUOQxjd2@testcluster.v7jum.mongodb.net/?retryWrites=true&w=majority&appName=testCluster"
