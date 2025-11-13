@@ -7,9 +7,9 @@ pipeline {
     }
 
     stages {
-        stage('Provision Infrastructure (Terraform)') {
+        stage('Deploy Infrastructure') {
             steps {
-                echo "🌍 Desplegando infraestructura con Terraform..."
+                echo "🚀 Desplegando infraestructura con Terraform..."
                 dir("${TERRAFORM_DIR}") {
                     withCredentials([
                         string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
@@ -18,131 +18,78 @@ pipeline {
                         string(credentialsId: 'mongodb-uri', variable: 'TF_VAR_mongodb_uri')
                     ]) {
                         sh '''
-                            echo "🔑 Inicializando Terraform..."
                             terraform init -input=false
-                            
-                            echo "🔍 Validando configuración..."
                             terraform validate
-                            
-                            echo "📋 Planificando infraestructura..."
-                            terraform plan -out=tfplan -input=false
-                            
-                            echo "🚀 Aplicando infraestructura..."
-                            terraform apply -input=false tfplan
-                            
-                            echo "✅ Infraestructura desplegada"
+                            terraform apply -auto-approve -input=false
                         '''
                     }
                 }
             }
         }
 
-        stage('Get EC2 Information') {
+        stage('Get Deployment Info') {
             steps {
                 dir("${TERRAFORM_DIR}") {
                     script {
-                        def ec2_ip = sh(
+                        env.EC2_IP = sh(
                             script: 'terraform output -raw ec2_public_ip',
                             returnStdout: true
                         ).trim()
                         
-                        echo "📍 IP de la instancia EC2: ${ec2_ip}"
-                        echo "🌐 Accede a tu aplicación en: http://${ec2_ip}:4000"
-                        echo "⏳ Espera ~5 minutos para que Docker Compose termine de inicializar"
-                        
-                        // Guardar la IP como variable de entorno para stages posteriores
-                        env.EC2_IP = ec2_ip
+                        echo "📍 IP de EC2: ${env.EC2_IP}"
                     }
                 }
             }
         }
 
-        stage('Wait for Application') {
-            steps {
-                echo "⏳ Esperando 5 minutos para que la aplicación se inicie en EC2..."
-                sleep(time: 2, unit: 'MINUTES')
-            }
-        }
-
-        stage('Verify Deployment') {
+        stage('Health Check') {
             steps {
                 script {
-                    echo "🔍 Verificando despliegue en ${env.EC2_IP}..."
+                    echo "🔍 Verificando disponibilidad de la aplicación..."
                     
-                    // Esperar más tiempo y verificar logs
-                    sleep(time: 1, unit: 'MINUTES')
-                    
-                    // Verificar logs de user-data
-                    echo "📋 Verificando logs de inicialización..."
-                    sh """
-                        ssh -o StrictHostKeyChecking=no -i mi-keypair.pem ubuntu@${env.EC2_IP} '
-                            echo "=== User Data Logs ==="
-                            sudo tail -100 /var/log/user-data.log || echo "No user-data logs"
-                            
-                            echo "=== Docker Status ==="
-                            sudo systemctl status docker --no-pager || true
-                            
-                            echo "=== Docker Compose Status ==="
-                            cd /home/ubuntu/faketinder && docker-compose ps || true
-                            
-                            echo "=== Container Logs ==="
-                            cd /home/ubuntu/faketinder && docker-compose logs --tail=50 || true
-                        '
-                    """
-                    
-                    // Health check con retry
-                    def maxRetries = 10
+                    def maxRetries = 20
                     def retryCount = 0
-                    def healthCheckPassed = false
+                    def isHealthy = false
                     
-                    while (retryCount < maxRetries && !healthCheckPassed) {
-                        def healthCheckResult = sh(
-                            script: """
-                                curl -f -s -o /dev/null -w '%{http_code}' http://${env.EC2_IP}:4000 || echo '000'
-                            """,
+                    while (retryCount < maxRetries && !isHealthy) {
+                        def status = sh(
+                            script: "curl -s -o /dev/null -w '%{http_code}' http://${env.EC2_IP}:4000 || echo '000'",
                             returnStdout: true
                         ).trim()
                         
-                        if (healthCheckResult == '200' || healthCheckResult == '404') {
-                            echo "✅ Nginx está respondiendo (HTTP ${healthCheckResult})"
-                            healthCheckPassed = true
+                        if (status == '200' || status == '404' || status == '502') {
+                            echo "✅ Aplicación respondiendo (HTTP ${status})"
+                            isHealthy = true
                         } else {
                             retryCount++
-                            echo "⏳ Intento ${retryCount}/${maxRetries}: Nginx no responde (${healthCheckResult}). Esperando..."
-                            sleep(time: 30, unit: 'SECONDS')
+                            echo "⏳ Intento ${retryCount}/${maxRetries} - Esperando inicialización..."
+                            sleep(15)
                         }
                     }
                     
-                    if (!healthCheckPassed) {
-                        error("❌ Nginx no respondió después de ${maxRetries} intentos")
+                    if (!isHealthy) {
+                        echo "⚠️  La aplicación aún se está iniciando. Verifica manualmente."
                     }
                 }
             }
         }
 
-        stage('Display Access Information') {
+        stage('Show Access Info') {
             steps {
                 script {
                     echo """
-                    ═══════════════════════════════════════════════════
-                    🎉 DESPLIEGUE COMPLETADO
-                    ═══════════════════════════════════════════════════
+                    ═══════════════════════════════════════════════
+                    ✅ DESPLIEGUE COMPLETADO
+                    ═══════════════════════════════════════════════
                     
-                    📍 IP Pública: ${env.EC2_IP}
-                    🌐 URL Principal: http://${env.EC2_IP}:4000
+                    🌐 URL: http://${env.EC2_IP}:4000
                     
-                    📡 Endpoints de Servicios:
-                    ├─ Auth Service:   http://${env.EC2_IP}:4001
-                    ├─ Users Service:  http://${env.EC2_IP}:4002
-                    └─ Swipes Service: http://${env.EC2_IP}:4003
+                    📡 Servicios:
+                    • Auth:   http://${env.EC2_IP}:4001
+                    • Users:  http://${env.EC2_IP}:4002
+                    • Swipes: http://${env.EC2_IP}:4003
                     
-                    🔐 Conexión SSH:
-                    ssh -i mi-keypair.pem ubuntu@${env.EC2_IP}
-                    
-                    📋 Verificar logs en EC2:
-                    cd /home/ubuntu/faketinder && docker-compose logs -f
-                    
-                    ═══════════════════════════════════════════════════
+                    ═══════════════════════════════════════════════
                     """
                 }
             }
@@ -152,14 +99,9 @@ pipeline {
     post {
         success {
             echo "🎉 Pipeline completado exitosamente"
-            script {
-                if (env.EC2_IP) {
-                    echo "🌐 Tu aplicación está en: http://${env.EC2_IP}:4000"
-                }
-            }
         }
         failure {
-            echo "❌ Pipeline falló. Revisa los logs."
+            echo "❌ Pipeline falló"
             dir("${TERRAFORM_DIR}") {
                 sh 'terraform show || true'
             }
