@@ -59,7 +59,7 @@ resource "aws_security_group" "faketinder_sg" {
 
 resource "aws_instance" "faketinder_ec2" {
   ami                         = var.ami_id
-  instance_type               = var.instance_type
+  instance_type               = var.instance_type != "" ? var.instance_type : "t3.micro"
   key_name                    = var.key_name
   vpc_security_group_ids      = [aws_security_group.faketinder_sg.id]
   associate_public_ip_address = true
