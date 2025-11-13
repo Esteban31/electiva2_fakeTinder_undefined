@@ -96,14 +96,3 @@ output "ec2_public_ip" {
   description = "IP pública de la instancia EC2"
   value       = aws_instance.faketinder_ec2.public_ip
 }
-
-###################
-# VARIABLE DEFINES #
-###################
-
-variable "ami_id" {}
-variable "instance_type" {}
-variable "key_name" {}
-variable "git_repo_url" {}
-variable "jwt_key" {}
-variable "mongodb_uri" {}
