@@ -11,25 +11,22 @@ pipeline {
         stage('Provision Infrastructure (Terraform)') {
             steps {
                 echo "🌍 Desplegando infraestructura con Terraform..."
-                // Inyecta las credenciales AWS almacenadas en Jenkins
-                withCredentials([
-                    string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
-                ]) {
-                    dir("${TERRAFORM_DIR}") {
+                dir("${TERRAFORM_DIR}") {
+                    withCredentials([
+                        string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
+                        string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                    ]) {
                         sh '''
-                            echo "🔧 Inicializando Terraform..."
+                            export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+                            export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
                             terraform init -input=false
-
-                            echo "🚀 Aplicando cambios de infraestructura..."
-                            terraform apply -auto-approve -input=false \
-                                -var="aws_access_key=${AWS_ACCESS_KEY_ID}" \
-                                -var="aws_secret_key=${AWS_SECRET_ACCESS_KEY}"
+                            terraform apply -auto-approve -input=false
                         '''
                     }
                 }
             }
         }
+
 
         stage('Clean Previous Containers') {
             steps {
