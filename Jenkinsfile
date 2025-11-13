@@ -69,29 +69,53 @@ pipeline {
                 script {
                     echo "🔍 Verificando despliegue en ${env.EC2_IP}..."
                     
-                    // Health check simple sin autenticación
-                    def healthCheckResult = sh(
-                        script: """
-                            curl -f -s -o /dev/null -w '%{http_code}' http://${env.EC2_IP}:4000 || echo '000'
-                        """,
-                        returnStdout: true
-                    ).trim()
+                    // Esperar más tiempo y verificar logs
+                    sleep(time: 1, unit: 'MINUTES')
                     
-                    if (healthCheckResult == '200' || healthCheckResult == '404') {
-                        echo "✅ Nginx está respondiendo (HTTP ${healthCheckResult})"
-                    } else {
-                        echo "⚠️ Nginx no responde correctamente. Código: ${healthCheckResult}"
-                        echo "📋 Verificando logs de la instancia EC2..."
+                    // Verificar logs de user-data
+                    echo "📋 Verificando logs de inicialización..."
+                    sh """
+                        ssh -o StrictHostKeyChecking=no -i mi-keypair.pem ubuntu@${env.EC2_IP} '
+                            echo "=== User Data Logs ==="
+                            sudo tail -100 /var/log/user-data.log || echo "No user-data logs"
+                            
+                            echo "=== Docker Status ==="
+                            sudo systemctl status docker --no-pager || true
+                            
+                            echo "=== Docker Compose Status ==="
+                            cd /home/ubuntu/faketinder && docker-compose ps || true
+                            
+                            echo "=== Container Logs ==="
+                            cd /home/ubuntu/faketinder && docker-compose logs --tail=50 || true
+                        '
+                    """
+                    
+                    // Health check con retry
+                    def maxRetries = 10
+                    def retryCount = 0
+                    def healthCheckPassed = false
+                    
+                    while (retryCount < maxRetries && !healthCheckPassed) {
+                        def healthCheckResult = sh(
+                            script: """
+                                curl -f -s -o /dev/null -w '%{http_code}' http://${env.EC2_IP}:4000 || echo '000'
+                            """,
+                            returnStdout: true
+                        ).trim()
+                        
+                        if (healthCheckResult == '200' || healthCheckResult == '404') {
+                            echo "✅ Nginx está respondiendo (HTTP ${healthCheckResult})"
+                            healthCheckPassed = true
+                        } else {
+                            retryCount++
+                            echo "⏳ Intento ${retryCount}/${maxRetries}: Nginx no responde (${healthCheckResult}). Esperando..."
+                            sleep(time: 30, unit: 'SECONDS')
+                        }
                     }
                     
-                    // Verificar puertos individuales
-                    sh """
-                        echo "🔍 Verificando puertos de servicios..."
-                        nc -zv ${env.EC2_IP} 4000 && echo "✅ Puerto 4000 (Nginx) abierto" || echo "❌ Puerto 4000 cerrado"
-                        nc -zv ${env.EC2_IP} 4001 && echo "✅ Puerto 4001 (Auth) abierto" || echo "❌ Puerto 4001 cerrado"
-                        nc -zv ${env.EC2_IP} 4002 && echo "✅ Puerto 4002 (Users) abierto" || echo "❌ Puerto 4002 cerrado"
-                        nc -zv ${env.EC2_IP} 4003 && echo "✅ Puerto 4003 (Swipes) abierto" || echo "❌ Puerto 4003 cerrado"
-                    """
+                    if (!healthCheckPassed) {
+                        error("❌ Nginx no respondió después de ${maxRetries} intentos")
+                    }
                 }
             }
         }
