@@ -41,27 +41,34 @@ resource "null_resource" "deploy_app" {
     host        = data.aws_instance.existing_ec2.public_ip
   }
 
-  # Clonar o actualizar el repositorio y desplegar
+  # Paso 1: Clonar/actualizar código
   provisioner "remote-exec" {
     inline = [
-      "set -e",
-      "echo '=== Actualizando código desde Git ==='",
+      "echo '=== Paso 1: Actualizando código desde Git ==='",
       "cd /home/ubuntu",
-      "if [ -d 'faketinder' ]; then cd faketinder && git pull origin ${var.git_branch}; else git clone -b ${var.git_branch} ${var.git_repo_url} faketinder; fi",
+      "if [ -d 'faketinder' ]; then echo 'Actualizando repositorio existente...' && cd faketinder && git fetch --all && git reset --hard origin/${var.git_branch} && git clean -fd; else echo 'Clonando repositorio...' && git clone -b ${var.git_branch} ${var.git_repo_url} faketinder; fi",
+      "echo '=== Código actualizado correctamente ==='",
+      "ls -la /home/ubuntu/faketinder"
+    ]
+  }
+
+  # Paso 2: Configurar .env y levantar contenedores
+  provisioner "remote-exec" {
+    inline = [
+      "echo '=== Paso 2: Configurando aplicación ==='",
       "cd /home/ubuntu/faketinder",
-      "echo '=== Configurando variables de entorno ==='",
       "cat > .env << 'ENVEOF'\nPORT=4003\nJWT_KEY=${var.jwt_key}\nJWT_EXPIRES_IN=3600\nMONGODB_URI=${var.mongodb_uri}\nENVEOF",
+      "echo 'Archivo .env creado'",
       "echo '=== Deteniendo contenedores anteriores ==='",
       "sudo docker-compose down 2>/dev/null || echo 'No hay contenedores previos'",
       "echo '=== Construyendo imágenes ==='",
-      "sudo docker-compose build",
+      "sudo docker-compose build --no-cache",
       "echo '=== Levantando contenedores ==='",
       "sudo docker-compose up -d",
-      "echo '=== Verificando contenedores ==='",
-      "sleep 3",
-      "sudo docker-compose ps",
+      "sleep 1",
+      "echo '=== Estado de contenedores ==='",
       "sudo docker ps",
-      "echo '=== Despliegue completado exitosamente! ==='"
+      "echo '=== Despliegue completado! ==='"
     ]
   }
 }
