@@ -4,18 +4,29 @@ pipeline {
     environment {
         DOCKER_COMPOSE_FILE = 'docker-compose.yml'
         COMPOSE_PROJECT_NAME = 'faketinder'
-        TERRAFORM_DIR = 'infra' // Carpeta donde guardarás tus archivos .tf
+        TERRAFORM_DIR = 'infra' // Carpeta con tus archivos .tf
     }
 
     stages {
         stage('Provision Infrastructure (Terraform)') {
             steps {
                 echo "🌍 Desplegando infraestructura con Terraform..."
-                dir("${TERRAFORM_DIR}") {
-                    sh '''
-                        terraform init -input=false
-                        terraform apply -auto-approve -input=false
-                    '''
+                // Inyecta las credenciales AWS almacenadas en Jenkins
+                withCredentials([
+                    string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    dir("${TERRAFORM_DIR}") {
+                        sh '''
+                            echo "🔧 Inicializando Terraform..."
+                            terraform init -input=false
+
+                            echo "🚀 Aplicando cambios de infraestructura..."
+                            terraform apply -auto-approve -input=false \
+                                -var="aws_access_key=${AWS_ACCESS_KEY_ID}" \
+                                -var="aws_secret_key=${AWS_SECRET_ACCESS_KEY}"
+                        '''
+                    }
                 }
             }
         }
@@ -77,7 +88,7 @@ EOF
             echo "🎉 Pipeline completado exitosamente"
         }
         failure {
-            echo "❌ Pipeline falló. Revisa que los contenedores estén activos"
+            echo "❌ Pipeline falló. Revisa que los contenedores estén activos o las credenciales AWS."
         }
         always {
             echo "🧹 Limpiando entorno mínimo..."
