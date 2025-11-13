@@ -44,11 +44,14 @@ resource "null_resource" "deploy_app" {
   # Paso 1: Clonar/actualizar código
   provisioner "remote-exec" {
     inline = [
-      "echo '=== Paso 1: Actualizando código desde Git ==='",
+      "echo '=== Paso 1: Limpiando y clonando repositorio ==='",
       "cd /home/ubuntu",
-      "if [ -d 'faketinder' ]; then echo 'Actualizando repositorio existente...' && cd faketinder && git fetch --all && git reset --hard origin/${var.git_branch} && git clean -fd; else echo 'Clonando repositorio...' && git clone -b ${var.git_branch} ${var.git_repo_url} faketinder; fi",
-      "echo '=== Código actualizado correctamente ==='",
-      "ls -la /home/ubuntu/faketinder"
+      "sudo rm -rf faketinder",
+      "git clone -b ${var.git_branch} ${var.git_repo_url} faketinder",
+      "echo '=== Repositorio clonado correctamente ==='",
+      "ls -la /home/ubuntu/faketinder",
+      "echo '=== Verificando docker-compose.yml ==='",
+      "test -f /home/ubuntu/faketinder/docker-compose.yml && echo 'docker-compose.yml encontrado' || echo 'ERROR: docker-compose.yml NO encontrado'"
     ]
   }
 
