@@ -5,6 +5,7 @@ pipeline {
         DOCKER_COMPOSE_FILE = 'docker-compose.yml'
         COMPOSE_PROJECT_NAME = 'faketinder'
         TERRAFORM_DIR = 'infra' // Carpeta con tus archivos .tf
+        AWS_REGION = 'us-east-1'
     }
 
     stages {
@@ -18,20 +19,62 @@ pipeline {
                     ]) {
                         sh '''
                             echo "🔑 Configurando variables AWS para Terraform..."
-                            export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-                            export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+                            export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                            export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
                             export AWS_DEFAULT_REGION=us-east-1
 
                             terraform init -input=false
                             terraform apply -auto-approve -input=false
+                            
+                            echo ""
+                            echo "=========================================="
+                            echo "✅ Terraform apply completado"
+                            echo "=========================================="
+                            terraform output
                         '''
                     }
                 }
             }
         }
 
-
-
+        stage('Wait for Application to be Ready') {
+            steps {
+                echo '⏳ Esperando a que la aplicación esté lista...'
+                dir('infra') {
+                    withCredentials([
+                        string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
+                        string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                    ]) {
+                        script {
+                            sh '''
+                                export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                                export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                                export AWS_DEFAULT_REGION=us-east-1
+                                
+                                # Obtener IP pública
+                                EC2_IP=$(terraform output -raw ec2_public_ip)
+                                echo "IP de EC2: $EC2_IP"
+                                
+                                # Esperar a que la aplicación responda (máximo 5 minutos)
+                                echo "🏥 Verificando salud de la aplicación..."
+                                for i in {1..30}; do
+                                    if curl -f -m 10 http://$EC2_IP:4003/health 2>/dev/null || curl -f -m 10 http://$EC2_IP:4003 2>/dev/null; then
+                                        echo "✅ Aplicación está respondiendo correctamente"
+                                        exit 0
+                                    fi
+                                    echo "Intento $i/30: Esperando respuesta de la aplicación..."
+                                    sleep 10
+                                done
+                                
+                                echo "⚠️ La aplicación no respondió en 5 minutos"
+                                echo "Esto es normal si es la primera vez o si Docker está descargando imágenes"
+                                echo "Puedes verificar manualmente en: http://$EC2_IP:4003"
+                            '''
+                        }
+                    }
+                }
+            }
+        }
 
         stage('Clean Previous Containers') {
             steps {
@@ -88,9 +131,33 @@ EOF
     post {
         success {
             echo "🎉 Pipeline completado exitosamente"
+            dir('infra') {
+                withCredentials([
+                    string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    script {
+                        sh '''
+                            export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                            export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                            export AWS_DEFAULT_REGION=us-east-1
+                            
+                            EC2_IP=$(terraform output -raw ec2_public_ip)
+                            
+                            echo ""
+                            echo "=========================================="
+                            echo "✅ DESPLIEGUE COMPLETADO EXITOSAMENTE"
+                            echo "=========================================="
+                            echo "🌐 URL de la aplicación: http://$EC2_IP:4003"
+                            echo "📊 Instancia EC2: $(terraform output -raw instance_id)"
+                            echo "=========================================="
+                        '''
+                    }
+                }
+            }
         }
         failure {
-            echo "❌ Pipeline falló. Revisa que los contenedores estén activos o las credenciales AWS."
+            echo "❌ Pipeline falló. Revisa los logs de Terraform."
         }
         always {
             echo "🧹 Limpiando entorno mínimo..."
