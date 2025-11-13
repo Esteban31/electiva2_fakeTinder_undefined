@@ -14,6 +14,7 @@ import { swaggerSpec } from './src/infrastructure/documentation/swaggerConfig.js
 
 
 
+
 mongooseConnection();
 
 const app = express();
