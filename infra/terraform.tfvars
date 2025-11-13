@@ -4,3 +4,4 @@ git_repo_url = "https://github.com/electiva3-tdea/electiva2_fakeTinder_undefined
 
 jwt_key      = "T9bXgiY95j6F"
 mongodb_uri  = "mongodb+srv://fakeTinderUser:XN9PbzRYqUOQxjd2@testcluster.v7jum.mongodb.net/?retryWrites=true&w=majority&appName=testCluster"
+instance_type = "t3.micro"

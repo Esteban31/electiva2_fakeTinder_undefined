@@ -13,7 +13,7 @@ terraform {
 }
 
 provider "aws" {
-  region = var.aws_region
+  region = "us-east-1"
 }
 
 ##################
@@ -28,21 +28,21 @@ resource "aws_security_group" "faketinder_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # SSH - restringe a tu IP si quieres más seguridad
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # HTTP
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
     from_port   = 4003
     to_port     = 4003
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Puerto de tu app (auth-service)
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -59,7 +59,7 @@ resource "aws_security_group" "faketinder_sg" {
 
 resource "aws_instance" "faketinder_ec2" {
   ami                         = var.ami_id
-  instance_type               = var.instance_type
+  instance_type               = var.instance_type != "" ? var.instance_type : "t3.micro"
   key_name                    = var.key_name
   vpc_security_group_ids      = [aws_security_group.faketinder_sg.id]
   associate_public_ip_address = true
@@ -71,18 +71,15 @@ resource "aws_instance" "faketinder_ec2" {
               systemctl enable docker
               systemctl start docker
 
-              # Clonar tu repositorio
               cd /home/ubuntu
               git clone ${var.git_repo_url} faketinder
               cd faketinder
 
-              # Crear archivo .env (puedes sobreescribir desde Jenkins luego)
               echo "PORT=4003" >> .env
               echo "JWT_KEY=${var.jwt_key}" >> .env
               echo "JWT_EXPIRES_IN=3600" >> .env
               echo "MONGODB_URI=${var.mongodb_uri}" >> .env
 
-              # Levantar servicios
               docker compose up -d --build
               EOF
 
