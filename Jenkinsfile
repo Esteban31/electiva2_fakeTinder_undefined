@@ -8,17 +8,16 @@ pipeline {
     }
 
     stages {
-        stage('Provision Infrastructure (Terraform)') {
+       stage('Provision Infrastructure (Terraform)') {
             steps {
                 echo "🌍 Desplegando infraestructura con Terraform..."
                 dir("${TERRAFORM_DIR}") {
                     withCredentials([
-                        string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
-                        string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                        string(credentialsId: 'aws-access-key-id', variable: 'TF_VAR_aws_access_key'),
+                        string(credentialsId: 'aws-secret-access-key', variable: 'TF_VAR_aws_secret_key')
                     ]) {
                         sh '''
-                            export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-                            export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+                            echo "🔑 Configurando variables AWS para Terraform..."
                             terraform init -input=false
                             terraform apply -auto-approve -input=false
                         '''
@@ -26,6 +25,7 @@ pipeline {
                 }
             }
         }
+
 
 
         stage('Clean Previous Containers') {
