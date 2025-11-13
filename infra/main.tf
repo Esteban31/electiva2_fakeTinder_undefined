@@ -21,7 +21,7 @@ provider "aws" {
 ##################
 
 resource "aws_security_group" "faketinder_sg" {
-  name        = "faketinder-sg"
+  name        = "faketinder-sg-new"
   description = "Allow HTTP, HTTPS, SSH and app ports"
 
   ingress {
