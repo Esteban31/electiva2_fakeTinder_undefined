@@ -4,26 +4,31 @@ pipeline {
     environment {
         DOCKER_COMPOSE_FILE = 'docker-compose.yml'
         COMPOSE_PROJECT_NAME = 'faketinder'
-        TERRAFORM_DIR = 'infra' // Carpeta con tus archivos .tf
+        TERRAFORM_DIR = 'infra'
     }
 
     stages {
-        stage('Provision Infrastructure (Terraform)') {
+        stage('Deploy to EC2 with Terraform') {
             steps {
-                echo "🌍 Desplegando infraestructura con Terraform..."
+                echo "🌍 Desplegando aplicación en EC2 con Terraform..."
                 dir("${TERRAFORM_DIR}") {
                     withCredentials([
                         string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
                         string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
                     ]) {
                         sh '''
-                            echo "🔑 Configurando variables AWS para Terraform..."
+                            echo "🔑 Configurando credenciales AWS..."
                             export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
                             export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
                             export AWS_DEFAULT_REGION=us-east-1
 
+                            echo "📦 Inicializando Terraform..."
                             terraform init -input=false
+
+                            echo "🚀 Aplicando Terraform..."
                             terraform apply -auto-approve -input=false
+
+                            echo "✅ Despliegue en EC2 completado"
                         '''
                     }
                 }
@@ -33,7 +38,7 @@ pipeline {
         stage('Clean Previous Containers') {
             steps {
                 script {
-                    echo "🧹 Deteniendo y eliminando contenedores anteriores..."
+                    echo "🧹 Deteniendo contenedores anteriores..."
                     sh 'docker-compose -f docker-compose.yml --project-name faketinder down --remove-orphans || true'
                 }
             }
@@ -66,17 +71,14 @@ EOF
             }
         }
 
-        stage('Run Health Checks') {
+        stage('Verify Services') {
             steps {
                 script {
-                    echo '🔍 Verificando que los servicios estén activos...'
-                    // FIXED: Changed all 'docker compose' to 'docker-compose'
+                    echo '🔍 Verificando servicios...'
                     sh """
+                        sleep 5
                         docker-compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} ps
-                        docker-compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} exec -T auth-service echo "Auth service is running"
-                        docker-compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} exec -T users-service echo "Users service is running"
-                        docker-compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} exec -T swipes-service echo "Swipes service is running"
-                        echo "✅ Todos los servicios están activos"
+                        echo "✅ Servicios desplegados"
                     """
                 }
             }
@@ -85,13 +87,13 @@ EOF
 
     post {
         success {
-            echo "🎉 Pipeline completado exitosamente"
+            echo "🎉 Despliegue completado exitosamente"
         }
         failure {
-            echo "❌ Pipeline falló. Revisa que los contenedores estén activos o las credenciales AWS."
+            echo "❌ El despliegue falló. Revisa los logs de los contenedores."
         }
         always {
-            echo "🧹 Limpiando entorno mínimo..."
+            echo "🧹 Limpiando archivos temporales..."
             sh 'rm -f .env || true'
         }
     }

@@ -4,25 +4,19 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
-variable "ami_id" {
-  description = "AMI de Ubuntu (por ejemplo, Ubuntu 22.04 LTS)"
-  type        = string
-  default     = "ami-053b0d53c279acc90"
-}
-
-variable "instance_type" {
-  description = "Tipo de instancia"
-  type        = string
-  default     = "t2.micro"
-}
-
-variable "key_name" {
-  description = "Nombre del key pair en AWS"
+variable "ec2_instance_id" {
+  description = "ID de la instancia EC2 existente"
   type        = string
 }
 
-variable "git_repo_url" {
-  description = "URL del repositorio con el proyecto"
+variable "ssh_user" {
+  description = "Usuario SSH para conectarse a la instancia"
+  type        = string
+  default     = "ubuntu"
+}
+
+variable "ssh_private_key_path" {
+  description = "Ruta al archivo .pem de la clave SSH"
   type        = string
 }
 
