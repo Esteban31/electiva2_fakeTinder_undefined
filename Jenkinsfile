@@ -4,14 +4,27 @@ pipeline {
     environment {
         DOCKER_COMPOSE_FILE = 'docker-compose.yml'
         COMPOSE_PROJECT_NAME = 'faketinder'
+        TERRAFORM_DIR = 'infra' // Carpeta donde guardarás tus archivos .tf
     }
 
     stages {
+        stage('Provision Infrastructure (Terraform)') {
+            steps {
+                echo "🌍 Desplegando infraestructura con Terraform..."
+                dir("${TERRAFORM_DIR}") {
+                    sh '''
+                        terraform init -input=false
+                        terraform apply -auto-approve -input=false
+                    '''
+                }
+            }
+        }
+
         stage('Clean Previous Containers') {
             steps {
                 script {
                     echo "🧹 Deteniendo y eliminando contenedores anteriores..."
-                    sh "docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} down --remove-orphans"
+                    sh "docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} down --remove-orphans || true"
                 }
             }
         }
@@ -20,19 +33,26 @@ pipeline {
             steps {
                 echo '⚙️ Configurando variables de entorno...'
                 withCredentials([
-                    string(credentialsId: 'jwt-secret', variable: 'JWT_SECRET'),
-                    string(credentialsId: 'mongodb-uri', variable: 'MONGODB_URI'),
-                    string(credentialsId: 'api-key', variable: 'API_KEY')
+                    string(credentialsId: 'jwt-key', variable: 'JWT_KEY'),
+                    string(credentialsId: 'mongodb-uri', variable: 'MONGODB_URI')
                 ]) {
                     sh '''
                         echo "📝 Creando archivo .env ..."
                         cat > .env << EOF
-JWT_SECRET=${JWT_SECRET}
+PORT=4003
+JWT_KEY=${JWT_KEY}
+JWT_EXPIRES_IN=3600
 MONGODB_URI=${MONGODB_URI}
-API_KEY=${API_KEY}
 EOF
                     '''
                 }
+            }
+        }
+
+        stage('Build and Run Containers') {
+            steps {
+                echo '🚀 Construyendo y levantando contenedores...'
+                sh "docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} up -d --build"
             }
         }
 
@@ -41,10 +61,10 @@ EOF
                 script {
                     echo '🔍 Verificando que los servicios estén activos...'
                     sh """
+                        docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} ps
                         docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} exec -T auth-service echo "Auth service is running"
                         docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} exec -T users-service echo "Users service is running"
                         docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} exec -T swipes-service echo "Swipes service is running"
-                        docker compose -f ${DOCKER_COMPOSE_FILE} --project-name ${COMPOSE_PROJECT_NAME} ps
                         echo "✅ Todos los servicios están activos"
                     """
                 }
@@ -61,7 +81,7 @@ EOF
         }
         always {
             echo "🧹 Limpiando entorno mínimo..."
-            sh 'rm -f .env'
+            sh 'rm -f .env || true'
         }
     }
 }
